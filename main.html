@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User, Group, and Role Management with Access Control and Workflow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(255, 126, 95, 0.4);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table-row:hover {
+            background-color: rgba(255, 126, 95, 0.1);
+        }
+        
+        .checkbox {
+            accent-color: #ff7e5f;
+        }
+        
+        .output-area {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 1rem;
+            font-mono;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4">
+    <div class="container mx-auto max-w-6xl">
+        <header class="text-center py-8">
+            <h1 class="text-4xl font-bold text-white mb-2">User, Group & Role Management System</h1>
+            <p class="text-white/80">Advanced Access Control & Workflow Optimization</p>
+        </header>
+
+        <nav class="flex justify-center mb-8">
+            <ul class="flex space-x-4">
+                <li><button class="tab-button btn-primary px-6 py-2 rounded-lg focus:outline-none" data-tab="users">Users</button></li>
+                <li><button class="tab-button btn-primary px-6 py-2 rounded-lg focus:outline-none" data-tab="groups">Groups</button></li>
+                <li><button class="tab-button btn-primary px-6 py-2 rounded-lg focus:outline-none" data-tab="roles">Roles</button></li>
+                <li><button class="tab-button btn-primary px-6 py-2 rounded-lg focus:outline-none" data-tab="workflow">Workflow</button></li>
+            </ul>
+        </nav>
+
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content active fade-in">
+            <div class="card p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4">User Management</h2>
+                <form id="user-form" class="mb-4 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="user-name" placeholder="User Name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                        <input type="email" id="user-email" placeholder="Email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                        <select id="user-role" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                            <option value="">Select Role</option>
+                        </select>
+                        <select id="user-group" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                            <option value="">Select Group</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Add User</button>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 text-left">Name</th>
+                                <th class="p-3 text-left">Email</th>
+                                <th class="p-3 text-left">Role</th>
+                                <th class="p-3 text-left">Group</th>
+                                <th class="p-3 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups Tab -->
+        <div id="groups-tab" class="tab-content fade-in">
+            <div class="card p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4">Group Management</h2>
+                <form id="group-form" class="mb-4">
+                    <div class="flex space-x-4">
+                        <input type="text" id="group-name" placeholder="Group Name" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Add Group</button>
+                    </div>
+                </form>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div id="groups-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roles Tab -->
+        <div id="roles-tab" class="tab-content fade-in">
+            <div class="card p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4">Role Management</h2>
+                <form id="role-form" class="mb-4 space-y-4">
+                    <div class="flex space-x-4">
+                        <input type="text" id="role-name" placeholder="Role Name" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="flex items-center"><input type="checkbox" class="checkbox mr-2" value="read"> Read</label>
+                            <label class="flex items-center"><input type="checkbox" class="checkbox mr-2" value="write"> Write</label>
+                            <label class="flex items-center"><input type="checkbox" class="checkbox mr-2" value="delete"> Delete</label>
+                            <label class="flex items-center"><input type="checkbox" class="checkbox mr-2" value="admin"> Admin</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Add Role</button>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 text-left">Role</th>
+                                <th class="p-3 text-left">Permissions</th>
+                                <th class="p-3 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow Tab -->
+        <div id="workflow-tab" class="tab-content fade-in">
+            <div class="card p-6">
+                <h2 class="text-2xl font-semibold mb-4">Workflow Management</h2>
+                <form id="workflow-form" class="mb-4 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="workflow-request" placeholder="Request Description" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                        <select id="workflow-user" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-400 focus:outline-none" required>
+                            <option value="">Select User</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Submit Request</button>
+                </form>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 text-left">Request</th>
+                                <th class="p-3 text-left">User</th>
+                                <th class="p-3 text-left">Status</th>
+                                <th class="p-3 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workflow-table-body"></tbody>
+                    </table>
+                </div>
+                <div class="mt-4 output-area">
+                    <h3 class="font-semibold mb-2">Access Control Output:</h3>
+                    <div id="access-output"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage using localStorage
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+        const groups = JSON.parse(localStorage.getItem('groups')) || [];
+        const roles = JSON.parse(localStorage.getItem('roles')) || [];
+        const workflows = JSON.parse(localStorage.getItem('workflows')) || [];
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(e.target.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+
+        // User Management
+        function updateUserOptions() {
+            const roleSelect = document.getElementById('user-role');
+            const groupSelect = document.getElementById('user-group');
+            const workflowUserSelect = document.getElementById('workflow-user');
+
+            roleSelect.innerHTML = '<option value="">Select Role</option>';
+            groupSelect.innerHTML = '<option value="">Select Group</option>';
+            workflowUserSelect.innerHTML = '<option value="">Select User</option>';
+
+            roles.forEach(role => {
+                const option = document.createElement('option');
+                option.value = role.name;
+                option.textContent = role.name;
+                roleSelect.appendChild(option);
+            });
+
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.name;
+                option.textContent = group.name;
+                groupSelect.appendChild(option);
+            });
+
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.name;
+                option.textContent = user.name;
+                workflowUserSelect.appendChild(option);
+            });
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('table-row');
+                row.innerHTML = `
+                    <td class="p-3">${user.name}</td>
+                    <td class="p-3">${user.email}</td>
+                    <td class="p-3">${user.role}</td>
+                    <td class="p-3">${user.group}</td>
+                    <td class="p-3">
+                        <button onclick="deleteUser(${index})" class="text-red-500 hover:text-red-700">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            updateUserOptions();
+        }
+
+        document.getElementById('user-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            const role = document.getElementById('user-role').value;
+            const group = document.getElementById('user-group').value;
+
+            if (name && email && role && group) {
+                users.push({
+                    name,
+                    email,
+                    role,
+                    group
+                });
+                localStorage.setItem('users', JSON.stringify(users));
+                document.getElementById('user-form').reset();
+                renderUsers();
+                renderWorkflows();
+            }
+        });
+
+        function deleteUser(index) {
+            users.splice(index, 1);
+            localStorage.setItem('users', JSON.stringify(users));
+            renderUsers();
+            renderWorkflows();
+        }
+
+        // Group Management
+        function renderGroups() {
+            const container = document.getElementById('groups-list');
+            container.innerHTML = '';
+            groups.forEach((group, index) => {
+                const div = document.createElement('div');
+                div.classList.add('bg-white', 'p-4', 'rounded-lg', 'shadow-md');
+                div.innerHTML = `
+                    <h3 class="font-semibold">${group.name}</h3>
+                    <p class="text-sm text-gray-600">Users: ${group.users ? group.users.length : 0}</p>
+                    <button onclick="deleteGroup(${index})" class="text-red-500 hover:text-red-700 mt-2">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+            updateUserOptions();
+        }
+
+        document.getElementById('group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('group-name').value;
+            if (name) {
+                groups.push({
+                    name,
+                    users: []
+                });
+                localStorage.setItem('groups', JSON.stringify(groups));
+                document.getElementById('group-form').reset();
+                renderGroups();
+            }
+        });
+
+        function deleteGroup(index) {
+            groups.splice(index, 1);
+            localStorage.setItem('groups', JSON.stringify(groups));
+            renderGroups();
+        }
+
+        // Role Management
+        function renderRoles() {
+            const tbody = document.getElementById('roles-table-body');
+            tbody.innerHTML = '';
+            roles.forEach((role, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('table-row');
+                row.innerHTML = `
+                    <td class="p-3">${role.name}</td>
+                    <td class="p-3">${role.permissions.join(', ')}</td>
+                    <td class="p-3">
+                        <button onclick="deleteRole(${index})" class="text-red-500 hover:text-red-700">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            updateUserOptions();
+        }
+
+        document.getElementById('role-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('role-name').value;
+            const permissions = Array.from(document.querySelectorAll('#role-form input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            if (name && permissions.length > 0) {
+                roles.push({
+                    name,
+                    permissions
+                });
+                localStorage.setItem('roles', JSON.stringify(roles));
+                document.getElementById('role-form').reset();
+                renderRoles();
+            }
+        });
+
+        function deleteRole(index) {
+            roles.splice(index, 1);
+            localStorage.setItem('roles', JSON.stringify(roles));
+            renderRoles();
+        }
+
+        // Workflow Management
+        function renderWorkflows() {
+            const tbody = document.getElementById('workflow-table-body');
+            tbody.innerHTML = '';
+            workflows.forEach((workflow, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('table-row');
+                row.innerHTML = `
+                    <td class="p-3">${workflow.request}</td>
+                    <td class="p-3">${workflow.user}</td>
+                    <td class="p-3">
+                        <select onchange="updateWorkflowStatus(${index}, this.value)" class="p-2 border rounded">
+                            <option value="pending" ${workflow.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="approved" ${workflow.status === 'approved' ? 'selected' : ''}>Approved</option>
+                            <option value="rejected" ${workflow.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                    </td>
+                    <td class="p-3">
+                        <button onclick="deleteWorkflow(${index})" class="text-red-500 hover:text-red-700">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            updateUserOptions();
+            checkAccessControl();
+        }
+
+        document.getElementById('workflow-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const request = document.getElementById('workflow-request').value;
+            const user = document.getElementById('workflow-user').value;
+
+            if (request && user) {
+                workflows.push({
+                    request,
+                    user,
+                    status: 'pending'
+                });
+                localStorage.setItem('workflows', JSON.stringify(workflows));
+                document.getElementById('workflow-form').reset();
+                renderWorkflows();
+            }
+        });
+
+        function updateWorkflowStatus(index, status) {
+            workflows[index].status = status;
+            localStorage.setItem('workflows', JSON.stringify(workflows));
+            renderWorkflows();
+        }
+
+        function deleteWorkflow(index) {
+            workflows.splice(index, 1);
+            localStorage.setItem('workflows', JSON.stringify(workflows));
+            renderWorkflows();
+        }
+
+        // Access Control Logic
+        function checkAccessControl() {
+            const output = document.getElementById('access-output');
+            output.innerHTML = '';
+
+            workflows.forEach(workflow => {
+                const user = users.find(u => u.name === workflow.user);
+                if (user) {
+                    const role = roles.find(r => r.name === user.role);
+                    if (role && workflow.status === 'approved') {
+                        if (role.permissions.includes('write')) {
+                            output.innerHTML += < p class = "text-green-600" > ✓$ {
+                                user.name
+                            }($ {
+                                user.email
+                            }) can proceed with "${workflow.request}"
+                            due to write access. < /p>;
+                        } else {
+                            output.innerHTML += < p class = "text-red-600" > ✗$ {
+                                user.name
+                            }($ {
+                                user.email
+                            }) lacks write access
+                            for "${workflow.request}". < /p>;
+                        }
+                    }
+                }
+            });
+
+            if (output.innerHTML === '') {
+                output.innerHTML = '<p class="text-gray-500">No active workflows to check access for.</p>';
+            }
+        }
+
+        // Initialize
+        renderUsers();
+        renderGroups();
+        renderRoles();
+        renderWorkflows();
+    </script>
+</body>
+
+</html>
+</content>
+</create_file>
